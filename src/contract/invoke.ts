@@ -1,18 +1,70 @@
-import { SorobanRpc, Contract } from '@stellar/stellar-sdk';
+import {
+  SorobanRpc,
+  Contract,
+  TransactionBuilder,
+  BASE_FEE,
+} from '@stellar/stellar-sdk';
 import { SOROBAN_RPC_URLS } from '../constants';
 import type { TrustFlowClient } from '../client';
+import type { ContractCallResult } from '../types/contract';
+import { TrustFlowError } from '../errors';
+
+export type SignAndSubmitFn = (xdr: string) => Promise<string>;
 
 export async function invokeContract(
   client: TrustFlowClient,
   method: string,
   args: unknown[],
   caller: string,
-): Promise<unknown> {
+  signAndSubmit?: SignAndSubmitFn,
+): Promise<ContractCallResult> {
   const rpcUrl = SOROBAN_RPC_URLS[client.network];
   const server = new SorobanRpc.Server(rpcUrl);
   const contract = new Contract(client.contractId);
-  const account = await server.getAccount(caller);
-  // Build and simulate the invocation
-  const operation = contract.call(method, ...(args as any[]));
-  return { operation, account, server };
+
+  try {
+    const account = await server.getAccount(caller);
+    const operation = contract.call(method, ...args);
+
+    const tx = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: client.getNetworkPassphrase(),
+    })
+      .addOperation(operation)
+      .setTimeout(30)
+      .build();
+
+    const simulation = await server.simulateTransaction(tx);
+
+    if (SorobanRpc.Api.isSimulationError(simulation)) {
+      return {
+        success: false,
+        errorCode: undefined,
+      };
+    }
+
+    if (!signAndSubmit) {
+      return {
+        success: true,
+        returnValue: simulation.result?.retval,
+        gasUsed: Number(simulation.cost?.cpuInsns ?? 0),
+      };
+    }
+
+    const prepared = SorobanRpc.assembleTransaction(tx, simulation).build();
+    const xdr = prepared.toXDR();
+    const txHash = await signAndSubmit(xdr);
+
+    return {
+      success: true,
+      txHash,
+      returnValue: simulation.result?.retval,
+      gasUsed: Number(simulation.cost?.cpuInsns ?? 0),
+    };
+  } catch (e) {
+    if (e instanceof TrustFlowError) {
+      return { success: false, errorCode: undefined };
+    }
+    return { success: false, errorCode: undefined };
+  }
 }

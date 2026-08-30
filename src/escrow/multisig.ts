@@ -441,7 +441,8 @@ export class MultiSigEscrowClient {
     if (type === xdr.EnvelopeType.envelopeTypeTxFeeBump()) {
       return envelope.feeBump().signatures();
     }
-    // Legacy v0 envelope
+    // Legacy v0 envelope — v0 accessor not in type defs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (envelope as any).v0?.().signatures?.() ?? [];
   }
 
@@ -456,6 +457,8 @@ export class MultiSigEscrowClient {
     } else if (type === xdr.EnvelopeType.envelopeTypeTxFeeBump()) {
       envelope.feeBump().signatures(signatures);
     } else {
+      // Legacy v0 envelope — v0 accessor not in type defs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (envelope as any).v0?.().signatures?.(signatures);
     }
   }

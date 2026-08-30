@@ -17,9 +17,7 @@
  */
 import { z } from 'zod';
 import { TrustFlowError } from './errors';
-
-const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
-const CONTRACT_ID_RE = /^C[A-Z2-7]{55}$/;
+import { STELLAR_ADDRESS_RE, CONTRACT_ID_RE } from './utils/validation';
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
