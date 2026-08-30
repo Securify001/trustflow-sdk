@@ -14,8 +14,8 @@ export function useWallet() {
       const w = await connectWallet(type);
       setWallet(w);
       return w;
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
       throw e;
     } finally {
       setLoading(false);

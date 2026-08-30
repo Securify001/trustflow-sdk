@@ -10,6 +10,10 @@ export interface SimulationResult {
   error?: string;
 }
 
+interface FakeEnvelope {
+  toXDR(): string;
+}
+
 export async function simulateContractCall(
   client: TrustFlowClient,
   xdr: string,
@@ -17,8 +21,8 @@ export async function simulateContractCall(
   const server = new SorobanRpc.Server(SOROBAN_RPC_URLS[client.network]);
   try {
     const result = await server.simulateTransaction({
-      toEnvelope: () => ({ toXDR: () => xdr }),
-    } as any);
+      toEnvelope: () => ({ toXDR: () => xdr }) as FakeEnvelope,
+    } as SorobanRpc.Api.Transaction);
     if (SorobanRpc.Api.isSimulationError(result)) {
       return { success: false, cost: { cpuInsns: '0', memBytes: '0' }, error: result.error };
     }
