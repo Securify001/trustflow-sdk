@@ -1,3 +1,5 @@
+import { TrustFlowError } from '../errors';
+
 export interface PreparedTx {
   xdr: string;
   networkPassphrase: string;
@@ -26,7 +28,10 @@ export async function submitTransaction(xdr: string, horizonUrl: string): Promis
     extras?: { result_codes?: { transaction?: string } };
   };
   if (!res.ok) {
-    throw new Error(data.extras?.result_codes?.transaction ?? 'Submission failed');
+    throw new TrustFlowError(
+      data.extras?.result_codes?.transaction ?? 'Submission failed',
+      'SUBMISSION_ERROR',
+    );
   }
   return { hash: data.hash, successful: data.successful, ledger: data.ledger };
 }

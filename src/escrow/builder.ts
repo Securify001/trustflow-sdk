@@ -1,4 +1,5 @@
 import { EscrowParams } from '../types/index';
+import { TrustFlowError } from '../errors';
 
 export class EscrowBuilder {
   private params: Partial<EscrowParams> = {};
@@ -26,13 +27,13 @@ export class EscrowBuilder {
 
   build(): EscrowParams {
     if (!this.params.depositor) {
-      throw new Error('depositor required');
+      throw TrustFlowError.validation('depositor', 'depositor required');
     }
     if (!this.params.beneficiary) {
-      throw new Error('beneficiary required');
+      throw TrustFlowError.validation('beneficiary', 'beneficiary required');
     }
     if (!this.params.amountXLM) {
-      throw new Error('amountXLM required');
+      throw TrustFlowError.validation('amountXLM', 'amountXLM required');
     }
     return this.params as EscrowParams;
   }

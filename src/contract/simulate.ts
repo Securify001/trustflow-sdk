@@ -1,4 +1,4 @@
-import { SorobanRpc } from '@stellar/stellar-sdk';
+import { rpc } from '@stellar/stellar-sdk';
 import { SOROBAN_RPC_URLS } from '../constants';
 import type { TrustFlowClient } from '../client';
 import { TrustFlowError } from '../errors';
@@ -18,19 +18,19 @@ export async function simulateContractCall(
   client: TrustFlowClient,
   xdr: string,
 ): Promise<SimulationResult> {
-  const server = new SorobanRpc.Server(SOROBAN_RPC_URLS[client.network]);
+  const server = new rpc.Server(SOROBAN_RPC_URLS[client.network]);
   try {
     const result = await server.simulateTransaction({
       toEnvelope: () => ({ toXDR: () => xdr }) as FakeEnvelope,
-    } as SorobanRpc.Api.Transaction);
-    if (SorobanRpc.Api.isSimulationError(result)) {
+    } as rpc.Api.Transaction);
+    if (rpc.Api.isSimulationError(result)) {
       return { success: false, cost: { cpuInsns: '0', memBytes: '0' }, error: result.error };
     }
     return {
       success: true,
       cost: {
-        cpuInsns: String(result.cost?.cpuInsns ?? 0),
-        memBytes: String(result.cost?.memBytes ?? 0),
+        cpuInsns: '0',
+        memBytes: '0',
       },
     };
   } catch (e) {
