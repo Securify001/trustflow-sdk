@@ -1,3 +1,5 @@
+import { TrustFlowError } from '../errors';
+
 const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
 const XLM_AMOUNT_RE = /^\d+(\.\d{1,7})?$/;
 
@@ -15,7 +17,7 @@ export function isValidXLMAmount(value: string): boolean {
 
 export function assertStellarAddress(value: string, field = 'address'): void {
   if (!isValidStellarAddress(value)) {
-    throw new Error(`Invalid Stellar address for "${field}": ${value}`);
+    throw TrustFlowError.validation(field, `Invalid Stellar address for "${field}": ${value}`);
   }
 }
 

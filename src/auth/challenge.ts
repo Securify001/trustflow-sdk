@@ -1,4 +1,5 @@
 import { createApiHttpClient } from '../utils/http';
+import { TrustFlowError } from '../errors';
 
 export interface AuthChallenge {
   challenge: string;
@@ -26,8 +27,8 @@ export async function requestChallenge(
       params: { address },
     });
     return { challenge: response.data.challenge, expiresAt: Date.now() + 60_000, address };
-  } catch {
-    throw new Error('Failed to get challenge');
+  } catch (error) {
+    throw new TrustFlowError('Failed to get challenge', 'CONNECTION_ERROR', error);
   }
 }
 
@@ -46,7 +47,7 @@ export async function verifyAndGetToken(
   try {
     const response = await http.post<{ token: string }>('/auth/verify', { address, signature });
     return response.data.token;
-  } catch {
-    throw new Error('Signature verification failed');
+  } catch (error) {
+    throw new TrustFlowError('Signature verification failed', 'UNAUTHORIZED', error);
   }
 }

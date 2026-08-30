@@ -111,3 +111,66 @@ if (!result.ok) {
   console.log('confirmed:', result.data.hash, 'feeBumped:', result.data.feeBumped);
 }
 ```
+
+## Error Handling (`TrustFlowError` & `TrustFlowErrorCode`)
+
+The SDK throws or returns `TrustFlowError` instances across operations (client instantiation, escrow operations, contract simulation, multi-sig operations, and wallet connections). Both `TrustFlowError` and its `TrustFlowErrorCode` type union are exported from the package root:
+
+```typescript
+import { TrustFlowClient, TrustFlowError, type TrustFlowErrorCode } from '@trustflow/sdk';
+
+try {
+  const client = new TrustFlowClient({ contractId: '' });
+} catch (error) {
+  if (error instanceof TrustFlowError) {
+    console.error(`TrustFlow error [${error.code}]: ${error.message}`);
+    if (error.code === 'INVALID_CONFIG') {
+      // handle configuration error
+    }
+  }
+}
+```
+
+### Error Codes (`TrustFlowErrorCode`)
+
+| Error Code | Description |
+|---|---|
+| `CONNECTION_ERROR` | Network/RPC connection failure |
+| `CONTRACT_ERROR` | Contract invocation error or contract failure |
+| `VALIDATION_ERROR` | Input or schema validation failure |
+| `UNAUTHORIZED` | Unauthorized action or missing wallet permissions |
+| `NOT_FOUND` | Requested entity, escrow, or resource not found |
+| `SIMULATION_ERROR` | Soroban transaction simulation failed |
+| `SIGNING_ERROR` | Transaction signing failed |
+| `INVALID_CONFIG` | Invalid or missing client configuration |
+| `NOT_CONNECTED` | Operation attempted before client connected |
+| `BALANCE_FETCH_ERROR` | Failed to query balance from Horizon/RPC |
+| `MULTISIG_ERROR` | Generic multi-sig workflow error |
+| `MULTISIG_THRESHOLD_NOT_MET` | Signatures collected is less than required threshold |
+| `MULTISIG_ALREADY_SIGNED` | Signer has already signed this operation |
+| `MULTISIG_EXPIRED` | Multi-sig operation expired |
+| `MULTISIG_INVALID_SIGNER` | Address is not an authorized multi-sig signer |
+| `MULTISIG_XDR_ERROR` | XDR serialization or decoding error during multi-sig operations |
+| `ASSEMBLY_ERROR` | Soroban transaction assembly failure |
+| `FEE_BUMP_ERROR` | Fee-bump transaction construction failure |
+| `SUBMISSION_ERROR` | Transaction submission to RPC failed |
+| `RETRY_EXHAUSTED` | Retry attempts exceeded for the operation |
+| `NETWORK_ERROR` | Transport/network level error |
+| `AUTH_ERROR` | Authentication challenge or verification failure |
+| `TIMEOUT` | Operation timed out |
+
+### Static Factory Methods
+
+- `TrustFlowError.wrap(error: unknown, code?: TrustFlowErrorCode)`
+- `TrustFlowError.notFound(resource: string)`
+- `TrustFlowError.unauthorized(action: string)`
+- `TrustFlowError.validation(field: string, message: string)`
+- `TrustFlowError.multiSigThresholdNotMet(collected: number, required: number)`
+- `TrustFlowError.multiSigExpired(operationId: string)`
+- `TrustFlowError.multiSigInvalidSigner(address: string)`
+- `TrustFlowError.multiSigXdrError(detail: string)`
+- `TrustFlowError.assemblyFailed(detail: string, cause?: unknown)`
+- `TrustFlowError.simulationFailed(detail: string, cause?: unknown)`
+- `TrustFlowError.feeBumpFailed(detail: string, cause?: unknown)`
+- `TrustFlowError.submissionFailed(detail: string, cause?: unknown)`
+- `TrustFlowError.retryExhausted(stage: string, attempts: number, cause?: unknown)`

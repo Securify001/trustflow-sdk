@@ -1,3 +1,5 @@
+import { TrustFlowError } from '../errors';
+
 const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
 const CONTRACT_ID_RE = /^C[A-Z2-7]{55}$/;
 
@@ -16,6 +18,6 @@ export function isPositiveAmount(value: string): boolean {
 
 export function assertValidAddress(address: string, field: string): void {
   if (!isValidStellarAddress(address)) {
-    throw new Error(`Invalid Stellar address for field "${field}"`);
+    throw TrustFlowError.validation(field, `Invalid Stellar address for field "${field}"`);
   }
 }

@@ -14,4 +14,4 @@ export const SOROBAN_RPC_URLS: Record<Network, string> = {
 
 export const ESCROW_MIN_AMOUNT_STROOPS = 1_000_000n; // 0.1 XLM
 export const ESCROW_MAX_DURATION_BLOCKS = 1_000_000;
-export const SDK_VERSION = '0.2.0';
+export const SDK_VERSION = '0.2.1';

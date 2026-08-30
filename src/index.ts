@@ -11,6 +11,7 @@ export * from './types/events';
 export * from './types/multisig';
 export * from './types/juror';
 export * from './types/profile';
+export * from './constants';
 export * from './escrow';
 export * from './juror';
 export * from './profile';
@@ -21,8 +22,7 @@ export * from './utils/validation';
 export * from './utils/format';
 export * from './tx-pipeline';
 export { TrustFlowClient } from './client';
-export { TrustFlowError } from './errors';
-export type { TrustFlowErrorCode } from './errors';
+export * from './errors';
 
 // Zod runtime validation schemas (#45) — re-exported by name rather than
 // `export *` because `Network` and `ClientConfig` already exist as plain
@@ -39,5 +39,3 @@ export {
   ClientConfigSchema,
 } from './schemas';
 export type { CreateEscrowInput, ReleaseEscrowInput, DisputeEscrowInput } from './schemas';
-
-export const SDK_VERSION = '0.1.0';

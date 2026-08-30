@@ -18,7 +18,10 @@ export type TrustFlowErrorCode =
   | 'ASSEMBLY_ERROR'
   | 'FEE_BUMP_ERROR'
   | 'SUBMISSION_ERROR'
-  | 'RETRY_EXHAUSTED';
+  | 'RETRY_EXHAUSTED'
+  | 'NETWORK_ERROR'
+  | 'AUTH_ERROR'
+  | 'TIMEOUT';
 
 export class TrustFlowError extends Error {
   readonly code: TrustFlowErrorCode;
@@ -29,6 +32,14 @@ export class TrustFlowError extends Error {
     this.name = 'TrustFlowError';
     this.code = code;
     this.cause = cause;
+  }
+
+  static wrap(error: unknown, code: TrustFlowErrorCode = 'CONTRACT_ERROR'): TrustFlowError {
+    if (error instanceof TrustFlowError) {
+      return error;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return new TrustFlowError(message, code, error);
   }
 
   static notFound(resource: string): TrustFlowError {
