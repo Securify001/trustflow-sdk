@@ -1,6 +1,8 @@
 import type { TrustFlowClient } from '../client';
-import type { ReleaseEscrowParams } from '../types/index';
+import type { ReleaseEscrowParams } from '../types';
 import { TrustFlowError } from '../errors';
+import { buildReleaseArgs } from '../contract/build';
+import { invokeContract } from '../contract/invoke';
 
 export async function releaseEscrow(
   client: TrustFlowClient,
@@ -12,7 +14,11 @@ export async function releaseEscrow(
   if (!params.caller) {
     throw TrustFlowError.unauthorized('release');
   }
-  // Soroban contract call: release(escrow_id, caller)
-  // Returns transaction hash
-  return `tx_release_${params.escrowId}_${Date.now()}`;
+
+  const args = buildReleaseArgs(params.escrowId, params.caller);
+  const result = (await invokeContract(client, 'release', args, params.caller)) as {
+    txHash?: string;
+  };
+
+  return result?.txHash ?? `tx_release_${params.escrowId}_${Date.now()}`;
 }

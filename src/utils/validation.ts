@@ -1,10 +1,15 @@
 import { TrustFlowError } from '../errors';
 
-const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
+export const STELLAR_ADDRESS_RE = /^G[A-Z2-7]{55}$/;
+export const CONTRACT_ID_RE = /^C[A-Z2-7]{55}$/;
 const XLM_AMOUNT_RE = /^\d+(\.\d{1,7})?$/;
 
 export function isValidStellarAddress(value: string): boolean {
   return STELLAR_ADDRESS_RE.test(value);
+}
+
+export function isValidContractId(value: string): boolean {
+  return CONTRACT_ID_RE.test(value);
 }
 
 export function isValidXLMAmount(value: string): boolean {

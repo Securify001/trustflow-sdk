@@ -1,7 +1,10 @@
 import type { TrustFlowClient } from '../client';
-import type { CreateEscrowParams, Escrow, EscrowStatus } from '../types';
+import { EscrowStatus } from '../types';
+import type { CreateEscrowParams, Escrow } from '../types';
 import { TrustFlowError } from '../errors';
 import { ESCROW_MIN_AMOUNT_STROOPS } from '../constants';
+import { buildCreateEscrowArgs } from '../contract/build';
+import { invokeContract } from '../contract/invoke';
 
 export async function createEscrow(
   client: TrustFlowClient,
@@ -13,13 +16,22 @@ export async function createEscrow(
   if (!params.sender || !params.recipient) {
     throw TrustFlowError.validation('sender/recipient', 'Both addresses are required');
   }
-  // Contract invocation would happen here via src/contract/invoke
+
+  const args = buildCreateEscrowArgs({
+    sender: params.sender,
+    recipient: params.recipient,
+    amountStroops: params.amountStroops,
+    durationBlocks: params.durationBlocks,
+  });
+
+  await invokeContract(client, 'create_escrow', args, params.sender);
+
   return {
     id: `escrow-${Date.now()}`,
     sender: params.sender,
     recipient: params.recipient,
     amount: params.amountStroops,
-    status: 'PENDING' as unknown as EscrowStatus,
+    status: EscrowStatus.Pending,
     createdAt: Date.now(),
     metadata: params.metadata,
   };

@@ -20,6 +20,7 @@ export * from './auth';
 export * from './stellar';
 export * from './utils/validation';
 export * from './utils/format';
+export * from './utils/i128';
 export * from './tx-pipeline';
 export { TrustFlowClient } from './client';
 export * from './errors';

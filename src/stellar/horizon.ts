@@ -1,6 +1,13 @@
 import type { TrustFlowClient } from '../client';
 import { TrustFlowError } from '../errors';
 
+interface HorizonSubmitResponse {
+  hash: string;
+  successful: boolean;
+  ledger?: number;
+  extras?: { result_codes?: { transaction?: string } };
+}
+
 export async function submitTransaction(
   client: TrustFlowClient,
   signedXdr: string,
@@ -15,10 +22,11 @@ export async function submitTransaction(
           : (await import('@stellar/stellar-sdk')).Networks.TESTNET,
       ),
     );
-    return (result as any).hash;
-  } catch (e: any) {
+    return (result as HorizonSubmitResponse).hash;
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { extras?: { result_codes?: { transaction?: string } } } } };
     throw new TrustFlowError(
-      e?.response?.data?.extras?.result_codes?.transaction ?? 'Submission failed',
+      err?.response?.data?.extras?.result_codes?.transaction ?? 'Submission failed',
       'CONTRACT_ERROR',
       e,
     );

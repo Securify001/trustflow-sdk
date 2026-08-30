@@ -1,5 +1,6 @@
 import type { Transaction, FeeBumpTransaction } from '@stellar/stellar-sdk';
 import { TrustFlowError } from '../errors';
+import { getFreighter } from '../wallet/freighter';
 
 export type SignableTransaction = Transaction | FeeBumpTransaction;
 
@@ -12,10 +13,11 @@ export async function signWithFreighter(
   transaction: SignableTransaction,
   network: string,
 ): Promise<SignedTransaction> {
-  if (typeof window === 'undefined' || !(window as any).freighter) {
+  const freighter = getFreighter();
+  if (!freighter) {
     throw new TrustFlowError('Freighter wallet not available', 'UNAUTHORIZED');
   }
-  const { signedXDR } = await (window as any).freighter.signTransaction(
+  const { signedXDR } = await freighter.signTransaction(
     transaction.toEnvelope().toXDR('base64'),
     { network },
   );

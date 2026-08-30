@@ -109,7 +109,9 @@ export class TrustFlowClient {
   async getBalance(address: string): Promise<string> {
     try {
       const account = await this.server.loadAccount(address);
-      const native = account.balances.find((b: any) => b.asset_type === 'native');
+      const native = account.balances.find(
+        (b: { asset_type: string }) => b.asset_type === 'native',
+      );
       return native?.balance ?? '0';
     } catch (error) {
       throw new TrustFlowError(

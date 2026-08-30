@@ -1,4 +1,4 @@
-export { invokeContract } from './invoke';
+export { invokeContract, type SignAndSubmitFn } from './invoke';
 export { readContractState } from './read';
 export { simulateContractCall } from './simulate';
 export {
