@@ -1,4 +1,5 @@
 import type { Transaction, FeeBumpTransaction } from '@stellar/stellar-sdk';
+import { getFreighter } from '../wallet/freighter';
 
 export type SignableTransaction = Transaction | FeeBumpTransaction;
 
@@ -26,6 +27,11 @@ export async function signWithFreighter(
     throw new Error('Freighter wallet not available');
   }
   const { signedXDR } = await window.freighter.signTransaction(
+  const freighter = getFreighter();
+  if (!freighter) {
+    throw new Error('Freighter wallet not available');
+  }
+  const { signedXDR } = await freighter.signTransaction(
     transaction.toEnvelope().toXDR('base64'),
     { network },
   );
