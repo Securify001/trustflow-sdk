@@ -47,8 +47,8 @@ describe('contract module', () => {
   describe('build.ts', () => {
     it('buildCreateEscrowArgs returns valid arguments', () => {
       const args = buildCreateEscrowArgs({
-        sender: 'GBM...',
-        recipient: 'GBA...',
+        sender: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
+        recipient: 'GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR',
         amountStroops: 1000n,
         durationBlocks: 100,
       });
@@ -56,7 +56,7 @@ describe('contract module', () => {
     });
 
     it('buildReleaseArgs returns valid arguments', () => {
-      const args = buildReleaseArgs('escrow1', 'GBM...');
+      const args = buildReleaseArgs('escrow1', 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
       expect(args.length).toBe(2);
     });
 
