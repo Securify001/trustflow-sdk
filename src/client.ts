@@ -1,5 +1,11 @@
 import { Horizon } from '@stellar/stellar-sdk';
-import { HORIZON_URLS, SOROBAN_RPC_URLS, DEFAULT_NETWORK, SDK_VERSION } from './constants';
+import {
+  HORIZON_URLS,
+  SOROBAN_RPC_URLS,
+  NETWORK_PASSPHRASES,
+  DEFAULT_NETWORK,
+  SDK_VERSION,
+} from './constants';
 import { TrustFlowError } from './errors';
 import type { Network, ClientConfig } from './types';
 import { IPFSStorage } from './storage';
@@ -138,9 +144,9 @@ export class TrustFlowClient {
    * @returns Network passphrase string
    */
   getNetworkPassphrase(): string {
-    return this.network === 'TESTNET'
-      ? 'Test SDF Network ; September 2015'
-      : 'Public Global Stellar Network ; September 2015';
+    // Reads the same canonical source as HORIZON_URLS / SOROBAN_RPC_URLS
+    // (NETWORK_CONFIGS via constants) rather than a third inline copy (#109).
+    return NETWORK_PASSPHRASES[this.network];
   }
 
   /**
