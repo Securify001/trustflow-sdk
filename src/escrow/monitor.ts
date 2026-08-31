@@ -1,4 +1,5 @@
 import { TrustFlowEvent, EventHandler } from '../types/events';
+import { logger } from '../utils/logger';
 
 export class EscrowMonitor {
   private handlers = new Map<string, Set<EventHandler>>();
@@ -24,7 +25,7 @@ export class EscrowMonitor {
         const handlers = this.handlers.get(event.type) ?? new Set();
         const wildcards = this.handlers.get('*') ?? new Set();
         [...handlers, ...wildcards].forEach((h) => {
-          Promise.resolve(h(event)).catch(console.error);
+          Promise.resolve(h(event)).catch((err) => logger.error(String(err)));
         });
       }
     }, intervalMs);
