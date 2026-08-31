@@ -1,6 +1,29 @@
 # Changelog
 
 ## [Unreleased]
+- Added `./escrow`, `./wallet`, and `./utils` subpath exports (#100) — the
+  README's Quick Start (`import { createEscrow } from '@trustflow/sdk/escrow'`,
+  and likewise `/wallet`, `/utils`) previously failed with
+  `ERR_PACKAGE_PATH_NOT_EXPORTED` for consumers of the published package
+  because only `.` and `./react` were declared. Each is wired into
+  `tsup.config.ts`'s `entry` and `package.json`'s `exports` with matching
+  `types` / `import` / `require` conditions, and a test asserts every
+  `@trustflow/sdk/*` path in the README resolves against the exports map.
+- Removed the dead duplicate `submitTransaction` in `src/stellar/horizon.ts`
+  (#110) — the file was orphaned (not on the `src/stellar` barrel, no import
+  sites; `MultiSigEscrowClient.submitWhenReady` uses the `(xdr, horizonUrl)`
+  version from `src/stellar/transaction.ts`). A test guards against a second
+  implementation reappearing.
+- Exported `useEscrow` from `src/hooks/index.ts` (#107) — its
+  `createEscrow` / `releaseEscrow` imports resolve against the real
+  re-exports in `src/escrow/index.ts`, so the hook type-checks; added tests
+  for its create / release success and error paths. Still ships only from the
+  `@trustflow/sdk/react` subpath (#81).
+- Added a Soroban RPC smoke test for the contract-invocation layer (#104) —
+  `src/contract/{invoke,read,simulate}.ts` already use `rpc` (not the
+  nonexistent `SorobanRpc`) against `@stellar/stellar-sdk@15`; the test
+  constructs `rpc.Server` from `src/contract/index.ts`'s dependency graph so a
+  future SDK bump breaking this is caught immediately.
 - Added `TrustFlowEscrowClient.fund()` (#4) — funds an existing escrow by encoding a token
   transfer (e.g. the USDC Soroban token contract) into contract call arguments via the new
   `buildFundArgs`; omit `tokenAddress` to use the escrow's native asset.
