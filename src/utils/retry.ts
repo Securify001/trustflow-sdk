@@ -1,3 +1,5 @@
+import { TrustFlowError } from '../errors';
+
 export async function retry<T>(
   fn: () => Promise<T>,
   attempts: number,
@@ -14,5 +16,5 @@ export async function retry<T>(
       }
     }
   }
-  throw lastErr ?? new Error('Retry failed');
+  throw lastErr ?? new TrustFlowError('Retry failed', 'RETRY_EXHAUSTED');
 }

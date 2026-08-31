@@ -1,7 +1,7 @@
 import { stroopsToXLM, truncateAddress } from '../src/utils/format';
 import { xlmToStroops } from '../src/utils/validation';
 import { retry } from '../src/utils/retry';
-import { SimpleCache } from '../src/utils/cache';
+
 
 describe('format', () => {
   it('converts stroops to XLM', () => { expect(stroopsToXLM(10_000_000n)).toBe('1'); });

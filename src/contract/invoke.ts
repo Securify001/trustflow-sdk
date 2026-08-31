@@ -1,5 +1,5 @@
 import {
-  SorobanRpc,
+  rpc,
   Contract,
   TransactionBuilder,
   BASE_FEE,
@@ -19,12 +19,12 @@ export async function invokeContract(
   signAndSubmit?: SignAndSubmitFn,
 ): Promise<ContractCallResult> {
   const rpcUrl = SOROBAN_RPC_URLS[client.network];
-  const server = new SorobanRpc.Server(rpcUrl);
+  const server = new rpc.Server(rpcUrl);
   const contract = new Contract(client.contractId);
 
   try {
     const account = await server.getAccount(caller);
-    const operation = contract.call(method, ...args);
+    const operation = contract.call(method, ...(args as any[]));
 
     const tx = new TransactionBuilder(account, {
       fee: BASE_FEE,
@@ -36,7 +36,7 @@ export async function invokeContract(
 
     const simulation = await server.simulateTransaction(tx);
 
-    if (SorobanRpc.Api.isSimulationError(simulation)) {
+    if (rpc.Api.isSimulationError(simulation)) {
       return {
         success: false,
         errorCode: undefined,
@@ -47,11 +47,11 @@ export async function invokeContract(
       return {
         success: true,
         returnValue: simulation.result?.retval,
-        gasUsed: Number(simulation.cost?.cpuInsns ?? 0),
+        gasUsed: 0,
       };
     }
 
-    const prepared = SorobanRpc.assembleTransaction(tx, simulation).build();
+    const prepared = rpc.assembleTransaction(tx, simulation).build();
     const xdr = prepared.toXDR();
     const txHash = await signAndSubmit(xdr);
 
@@ -59,7 +59,7 @@ export async function invokeContract(
       success: true,
       txHash,
       returnValue: simulation.result?.retval,
-      gasUsed: Number(simulation.cost?.cpuInsns ?? 0),
+      gasUsed: 0,
     };
   } catch (e) {
     if (e instanceof TrustFlowError) {
