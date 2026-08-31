@@ -321,7 +321,9 @@ React hooks for wallet, balance, and transaction state are available from the `@
 import { useWallet, useBalance, useTransaction } from '@trustflow/sdk/react';
 ```
 
-`react` (`^18.0.0 || ^19.0.0`) is a peer dependency, required only if you import from `/react`. Note: `useEscrow` is not yet exported here — it's implemented against an API that doesn't currently exist on `TrustFlowClient` (tracked in [#81](https://github.com/trustflow-protocol/trustflow-sdk/issues/81)).
+`react` (`^18.0.0 || ^19.0.0`) is a peer dependency, required only if you import from `/react`. `useEscrow` is exported here too — it wraps the standalone `createEscrow` / `releaseEscrow` functions with loading / error state.
+
+The `@trustflow/sdk/escrow`, `@trustflow/sdk/wallet`, and `@trustflow/sdk/utils` subpaths used in the Quick Start above are declared in `package.json`'s `exports` and built as their own targets, so those imports resolve against the published package as well as from source.
 
 ---
 
