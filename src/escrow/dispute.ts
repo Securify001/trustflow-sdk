@@ -36,18 +36,30 @@ export async function disputeEscrow(
   return `tx_dispute_${params.escrowId}_${Date.now()}`;
 }
 
+import type { ContractConfig } from '../types/contract';
+
 export interface DisputeClientOptions {
   timeoutMs?: number;
 }
 
 export class DisputeClient {
   private readonly http;
+  private readonly apiUrl: string;
+  private readonly token: string;
 
   constructor(
-    private apiUrl: string,
-    private token: string,
+    config: ContractConfig,
     options: DisputeClientOptions = {},
   ) {
+    if (!config.apiBaseUrl) {
+      throw new Error('apiBaseUrl is required for DisputeClient');
+    }
+    if (!config.apiKey) {
+      throw new Error('apiKey is required for DisputeClient');
+    }
+    this.apiUrl = config.apiBaseUrl;
+    this.token = config.apiKey;
+
     this.http = createApiHttpClient({
       baseURL: this.apiUrl,
       timeoutMs: options.timeoutMs,
