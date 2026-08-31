@@ -15,6 +15,21 @@
       "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
+    },
+    "./escrow": {
+      "types": "./dist/escrow/index.d.ts",
+      "import": "./dist/escrow/index.mjs",
+      "require": "./dist/escrow/index.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet/index.d.ts",
+      "import": "./dist/wallet/index.mjs",
+      "require": "./dist/wallet/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.mjs",
+      "require": "./dist/utils/index.js"
     }
   },
   "files": [
