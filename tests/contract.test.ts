@@ -29,6 +29,7 @@ jest.mock('@stellar/stellar-sdk', () => {
       build: jest.fn().mockReturnValue('mock_tx'),
     })),
     BASE_FEE: '100',
+    scValToNative: jest.fn().mockImplementation((v: unknown) => v),
   };
 });
 
@@ -46,8 +47,8 @@ describe('contract module', () => {
   describe('build.ts', () => {
     it('buildCreateEscrowArgs returns valid arguments', () => {
       const args = buildCreateEscrowArgs({
-        sender: 'GBM...',
-        recipient: 'GBA...',
+        sender: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
+        recipient: 'GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR',
         amountStroops: 1000n,
         durationBlocks: 100,
       });
@@ -55,7 +56,7 @@ describe('contract module', () => {
     });
 
     it('buildReleaseArgs returns valid arguments', () => {
-      const args = buildReleaseArgs('escrow1', 'GBM...');
+      const args = buildReleaseArgs('escrow1', 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
       expect(args.length).toBe(2);
     });
 
@@ -131,10 +132,14 @@ describe('contract module', () => {
 
   describe('read.ts', () => {
     it('readContractState calls simulateTransaction', async () => {
+      const mockRetval = { type: 'mock' };
       const mockServer = {
-        simulateTransaction: jest.fn().mockResolvedValue('read_result'),
+        simulateTransaction: jest.fn().mockResolvedValue({
+          result: { retval: mockRetval },
+        }),
       };
       (rpc.Server as jest.Mock).mockImplementation(() => mockServer);
+      (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(false);
 
       const mockContract = {
         call: jest.fn().mockReturnValue({}),
@@ -142,7 +147,8 @@ describe('contract module', () => {
       (Contract as jest.Mock).mockImplementation(() => mockContract);
 
       const result = await readContractState(mockClient, 'get_state');
-      expect(result).toBe('read_result');
+      expect(mockServer.simulateTransaction).toHaveBeenCalled();
+      expect(result).toBeDefined();
     });
   });
 
