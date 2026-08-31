@@ -35,7 +35,7 @@ export const ContractIdSchema = z
 export const StroopsSchema = z.bigint().positive('Amount must be positive');
 
 /** Validates a supported TrustFlow network name. */
-export const NetworkSchema = z.enum(['MAINNET', 'TESTNET', 'FUTURENET']);
+export const NetworkSchema = z.enum(['MAINNET', 'TESTNET']);
 
 // ── Escrow ────────────────────────────────────────────────────────────────────
 
@@ -70,7 +70,8 @@ export const ClientConfigSchema = z.object({
   network: NetworkSchema.default('TESTNET'),
   contractId: ContractIdSchema,
   rpcUrl: z.string().url('RPC URL must be a valid URL').optional(),
-  horizonUrl: z.string().url('Horizon URL must be a valid URL').optional(),
+  apiBaseUrl: z.string().url('API base URL must be a valid URL').optional(),
+  apiKey: z.string().optional(),
 });
 
 // ── Inferred types ────────────────────────────────────────────────────────────
