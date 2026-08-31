@@ -14,9 +14,9 @@ export async function readContractState(
   const rpcUrl = SOROBAN_RPC_URLS[client.network];
   const server = new rpc.Server(rpcUrl);
   const contract = new Contract(client.contractId);
-  const _operation = contract.call(method, ...(args as any[]));
+  contract.call(method, ...(args as any[]));
   const result = await server.simulateTransaction({
     toEnvelope: () => ({ toXDR: () => '' }) as FakeEnvelope,
-  } as rpc.Api.Transaction);
+  } as any);
   return result;
 }

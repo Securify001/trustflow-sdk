@@ -22,7 +22,7 @@ export async function simulateContractCall(
   try {
     const result = await server.simulateTransaction({
       toEnvelope: () => ({ toXDR: () => xdr }) as FakeEnvelope,
-    } as rpc.Api.Transaction);
+    } as any);
     if (rpc.Api.isSimulationError(result)) {
       return { success: false, cost: { cpuInsns: '0', memBytes: '0' }, error: result.error };
     }
