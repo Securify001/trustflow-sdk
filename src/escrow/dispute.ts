@@ -4,6 +4,7 @@ import { DisputeParams, SDKResult } from '../types/index';
 import { TrustFlowError } from '../errors';
 import { buildDisputeArgs } from '../contract/build';
 import { createApiHttpClient, toApiErrorMessage } from '../utils/http';
+import { logger } from '../utils/logger';
 
 /**
  * Raises a dispute directly against the TrustFlow contract.
@@ -67,6 +68,7 @@ export class DisputeClient {
       const data = response.data;
       return { ok: true, data: { disputeId: data.id } };
     } catch (e) {
+      logger.error('Failed to raise dispute', e);
       return { ok: false, error: toApiErrorMessage(e) };
     }
   }
@@ -81,6 +83,7 @@ export class DisputeClient {
       const response = await this.http.get<unknown>(`/disputes/${escrowId}`);
       return { ok: true, data: response.data };
     } catch (e) {
+      logger.error(`Failed to get dispute for escrow ${escrowId}`, e);
       return { ok: false, error: toApiErrorMessage(e) };
     }
   }
