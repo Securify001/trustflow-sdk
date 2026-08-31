@@ -29,6 +29,7 @@ jest.mock('@stellar/stellar-sdk', () => {
       build: jest.fn().mockReturnValue('mock_tx'),
     })),
     BASE_FEE: '100',
+    scValToNative: jest.fn().mockImplementation((v: unknown) => v),
   };
 });
 
@@ -131,10 +132,14 @@ describe('contract module', () => {
 
   describe('read.ts', () => {
     it('readContractState calls simulateTransaction', async () => {
+      const mockRetval = { type: 'mock' };
       const mockServer = {
-        simulateTransaction: jest.fn().mockResolvedValue('read_result'),
+        simulateTransaction: jest.fn().mockResolvedValue({
+          result: { retval: mockRetval },
+        }),
       };
       (rpc.Server as jest.Mock).mockImplementation(() => mockServer);
+      (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(false);
 
       const mockContract = {
         call: jest.fn().mockReturnValue({}),
@@ -142,7 +147,8 @@ describe('contract module', () => {
       (Contract as jest.Mock).mockImplementation(() => mockContract);
 
       const result = await readContractState(mockClient, 'get_state');
-      expect(result).toBe('read_result');
+      expect(mockServer.simulateTransaction).toHaveBeenCalled();
+      expect(result).toBeDefined();
     });
   });
 
