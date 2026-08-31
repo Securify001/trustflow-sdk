@@ -7,7 +7,7 @@ import { TrustFlowError } from '../src/errors';
 import type { CreateEscrowParams } from '../src/types';
 
 const VALID_ADDR = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
-const OTHER_ADDR = 'GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB4E';
+const OTHER_ADDR = 'GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR';
 
 function createParams(over: Partial<CreateEscrowParams> = {}): CreateEscrowParams {
   return {

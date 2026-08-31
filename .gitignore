@@ -6,6 +6,7 @@ coverage/
 *.js.map
 *.tsbuildinfo
 docs/reference/
+fix.md
 
 # IDE
 dist

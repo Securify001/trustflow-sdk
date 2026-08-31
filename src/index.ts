@@ -25,6 +25,7 @@ export * from './utils/validation';
 export * from './utils/format';
 export * from './utils/i128';
 export * from './tx-pipeline';
+export * from './contract';
 export { TrustFlowClient } from './client';
 export * from './errors';
 

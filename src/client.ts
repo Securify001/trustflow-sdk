@@ -1,4 +1,4 @@
-import { Horizon } from '@stellar/stellar-sdk';
+import { Horizon, xdr } from '@stellar/stellar-sdk';
 import {
   HORIZON_URLS,
   SOROBAN_RPC_URLS,
@@ -9,6 +9,8 @@ import {
 import { TrustFlowError } from './errors';
 import type { Network, ClientConfig } from './types';
 import { IPFSStorage } from './storage';
+import { createContractBinding, SorobanContractClient } from './contract';
+
 
 /**
  * TrustFlowClient is the main entry point for interacting with the TrustFlow Protocol.
@@ -181,6 +183,26 @@ export class TrustFlowClient {
   }
 
   /**
+   * Generates auto-bound, type-safe contract client methods from Soroban spec entries.
+   *
+   * @param specEntries - Array of Soroban spec entries (XDR base64 strings, ScSpecEntry objects, or Buffers)
+   * @param overrideContractId - Optional contract ID override (defaults to client's contractId)
+   * @returns SorobanContractClient instance with bound spec methods
+   *
+   * @example
+   * ```typescript
+   * const binding = client.createContractBinding(specXdrEntries);
+   * const res = await binding.methods.create_escrow({ depositor, beneficiary, amount, duration }, caller);
+   * ```
+   */
+  createContractBinding<T extends Record<string, any> = Record<string, any>>(
+    specEntries: (xdr.ScSpecEntry | string | Uint8Array | Buffer)[],
+    overrideContractId?: string,
+  ): SorobanContractClient & T & { methods: T } {
+    return createContractBinding<T>(this, specEntries, overrideContractId);
+  }
+
+  /**
    * Returns a summary of the client configuration.
    *
    * @returns Object containing client configuration details
@@ -201,3 +223,4 @@ export class TrustFlowClient {
     };
   }
 }
+
