@@ -1,5 +1,48 @@
 # TrustFlow SDK API Reference
 
+## TrustFlowClient
+
+Main entry point for interacting with the TrustFlow Protocol. Manages network configuration, RPC connections, and provides access to escrow operations.
+
+### Constructor
+
+```typescript
+new TrustFlowClient(config: ClientConfig)
+```
+
+**Parameters:**
+- `contractId` — Soroban contract ID for TrustFlow escrow (required)
+- `network` — Network type ('TESTNET' or 'MAINNET'), defaults to TESTNET
+- `rpcUrl` — Optional custom Soroban RPC URL
+- `apiBaseUrl` — Optional TrustFlow API base URL for backend integration
+- `apiKey` — Optional API key for authenticated requests
+- `ipfs` — Optional IPFS configuration for `storage.upload()`
+
+### Methods
+
+- `connect()` — Establishes connection to the Stellar network and verifies connectivity
+- `isConnected()` — Returns true if currently connected to the network
+- `getBalance(address)` — Retrieves native XLM balance for a given Stellar address
+- `getNetworkPassphrase()` — Returns the network passphrase for transaction signing
+- `getConfig()` — Returns a summary of the client configuration
+- `getServer()` — Returns the underlying Horizon.Server instance for advanced operations
+- `getAuthHeaders()` — Creates authorization headers for API requests when apiKey is configured
+
+### Example
+
+```typescript
+const client = new TrustFlowClient({
+  contractId: process.env.CONTRACT_ID!,
+  network: 'TESTNET',
+  apiBaseUrl: 'https://api.trustflow.xyz',
+  apiKey: process.env.API_KEY
+});
+await client.connect();
+
+const balance = await client.getBalance('GDEPOSITOR...');
+console.log(`Balance: ${balance} XLM`);
+```
+
 ## TrustFlowEscrowClient
 - `createEscrow(params)` — create a new escrow; encodes contract call arguments via `buildCreateEscrowArgs`
 - `fund(escrowId, funderAddress, amountStroops, tokenAddress?)` — transfer an asset (e.g. USDC via
@@ -15,6 +58,85 @@
   TrustFlow contract; encodes contract call arguments via `buildDisputeArgs`. Distinct from
   `DisputeClient.raiseDispute` below, which records the dispute with the backend API instead of
   the on-chain contract.
+
+## MultiSigEscrowClient
+
+Client for collecting M-of-N signatures on shared backend Escrow operations. Manages multi-signature workflows where multiple signers must authorize a transaction before it can be submitted.
+
+### Constructor
+
+```typescript
+new MultiSigEscrowClient(config: ContractConfig)
+```
+
+### Flow
+
+1. Call `initMultiSigOperation` with base unsigned XDR and signer list
+2. Each authorized signer calls `addSignature` with their signed XDR
+3. Poll `getMultiSigStatus` to check progress
+4. Once `isReady` is true, call `submitWhenReady` to broadcast the transaction
+
+### Methods
+
+- `initMultiSigOperation(params)` — Initializes a new multi-sig operation for an escrow action
+  - Returns `operationId` used to reference this operation in subsequent calls
+  - Parameters: `escrowId`, `operationType`, `unsignedXdr`, `networkPassphrase`, `signers`, `threshold`, `expiresAt?`
+  
+- `addSignature(params)` — Adds a signer's contribution to a pending multi-sig operation
+  - Extracts the `DecoratedSignature` from the provided XDR envelope
+  - Merges it into the accumulated transaction without duplicating existing signatures
+  - Parameters: `operationId`, `signerAddress`, `signedXdr`
+  - Returns updated status snapshot after signature is recorded
+  
+- `getMultiSigStatus(operationId)` — Returns the current signature-collection status for an operation
+  - Returns status including collected signatures, whether operation is ready, and expiry state
+  
+- `submitWhenReady(operationId, rpcClient)` — Submits the assembled transaction to Horizon once signature threshold is met
+  - Only callable when `isReady` is true
+  - Returns transaction hash on successful submission
+  
+- `getAssembledXdr(operationId)` — Assembles and returns the complete XDR with all collected signatures
+  - Does not submit the transaction; useful for inspection or manual submission
+  
+- `listOperations()` — Returns all pending multi-sig operations
+
+### Example
+
+```typescript
+const client = new MultiSigEscrowClient(config);
+
+// Signer A initiates
+const result = client.initMultiSigOperation({
+  escrowId: 'escrow-123',
+  operationType: 'release',
+  unsignedXdr: '...',
+  networkPassphrase: 'Test SDF Network ; September 2015',
+  signers: ['GSIGNER_A...', 'GSIGNER_B...'],
+  threshold: 2,
+});
+const { operationId } = result.data;
+
+// Signer A adds their signature
+client.addSignature({
+  operationId,
+  signerAddress: 'GSIGNER_A...',
+  signedXdr: '...',
+});
+
+// Signer B adds their signature
+client.addSignature({
+  operationId,
+  signerAddress: 'GSIGNER_B...',
+  signedXdr: '...',
+});
+
+// Check status
+const status = client.getMultiSigStatus(operationId);
+if (status.data.isReady) {
+  const submitResult = await client.submitWhenReady(operationId, rpcClient);
+  console.log('Transaction hash:', submitResult.data.hash);
+}
+```
 
 ## ProfileClient
 - `new ProfileClient(apiUrl, token, options?)`
@@ -40,6 +162,97 @@ Fluent builder: `.setDepositor().setBeneficiary().setAmount().build()`
 ## Auth
 - `requestChallenge(apiUrl, address, options?)` — get signing challenge with retry-aware backend transport
 - `verifyAndGetToken(apiUrl, address, signature, options?)` — exchange signature for JWT with retry-aware backend transport
+
+## Wallet Module
+
+Wallet integration utilities for connecting to Stellar wallets (Freighter and Albedo) and managing wallet connections.
+
+### Exported Functions
+
+- `connectWallet(walletType)` — Initiates connection to a specified wallet
+  - `walletType`: 'freighter' | 'albedo'
+  - Returns a `WalletConnection` with methods for signing and requesting payments
+  
+- `disconnectWallet()` — Disconnects from the currently connected wallet
+  
+- `getFreighter()` — Gets the Freighter wallet adapter if installed
+  - Returns the Freighter API instance or throws if not available
+  - Check with `isFreighterInstalled()` first
+  
+- `isFreighterInstalled()` — Checks whether Freighter browser extension is installed
+  - Useful for conditional UI rendering
+  
+- `getAlbedo()` — Gets the Albedo wallet adapter
+  - Initializes Albedo integration for web-based signing
+
+### Types
+
+- `WalletType` — 'freighter' | 'albedo'
+- `WalletConnection` — Represents an active wallet connection with sign/payment methods
+- `WalletAdapter` — Interface for wallet adapters
+
+### Example
+
+```typescript
+import { connectWallet, disconnectWallet, isFreighterInstalled } from '@trustflow/sdk';
+
+// Check if Freighter is available
+if (isFreighterInstalled()) {
+  const wallet = await connectWallet('freighter');
+  const publicKey = await wallet.getPublicKey();
+  console.log('Connected:', publicKey);
+}
+
+// Later: disconnect
+await disconnectWallet();
+```
+
+## Event Parsing Utilities (`src/events.ts`)
+
+Utilities for parsing raw Soroban contract events into typed TrustFlow event structures.
+
+### Functions
+
+- `isTrustFlowEvent(event, contractId)` — Checks whether a raw event belongs to TrustFlow
+  - Validates that `event.contractId` matches the provided `contractId` and `event.type` is 'contract'
+  
+- `parseEvent(event)` — Parses a single raw Soroban contract event into a typed TrustFlow event
+  - Returns `ParsedEvent` or `null` if parsing fails
+  - Automatically decodes XDR-encoded values to readable strings
+  - Handles multiple event types: `escrow_created`, `escrow_released`, `dispute_raised`, etc.
+  
+- `parseEvents(events, contractId)` — Parses an array of raw events, filtering and mapping to typed events
+  - Filters to only TrustFlow events (via `isTrustFlowEvent`)
+  - Maps each through `parseEvent`
+  - Returns array of successfully-parsed events
+
+### Types
+
+- `TrustFlowEventType` — Union of event type strings: 'escrow_created' | 'escrow_released' | 'escrow_cancelled' | 'dispute_raised' | 'dispute_resolved' | 'milestone_completed'
+- `ParsedEvent<T>` — Typed event with `type`, `contractId`, `ledger`, `timestamp`, `id`, `data`
+- `EscrowCreatedData`, `EscrowReleasedData`, `DisputeRaisedData` — Event-specific data shapes
+
+### Example
+
+```typescript
+import { parseEvents, isTrustFlowEvent } from '@trustflow/sdk';
+
+// Fetch raw events from Horizon
+const rawEvents = await horizon.effects().limit(10).call();
+
+// Filter and parse
+const trustFlowEvents = parseEvents(
+  rawEvents.filter(e => e.type === 'contract'),
+  'CBQHN7T6QV7YZXBEHNYQT4ZIXHQ7A4G26QCDHXN46WLZWURVSJR7D4E'
+);
+
+trustFlowEvents.forEach(event => {
+  if (event.type === 'escrow_created') {
+    const { escrowId, sender, recipient, amount } = event.data;
+    console.log(`Escrow ${escrowId} created: ${sender} -> ${recipient} (${amount} stroops)`);
+  }
+});
+```
 
 ## Validation Schemas
 Zod runtime schemas (`src/schemas.ts`) — the same ones the SDK uses internally — exported from
