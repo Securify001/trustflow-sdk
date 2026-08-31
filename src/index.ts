@@ -8,6 +8,9 @@ export * from './types';
 export * from './types/index';
 export * from './types/contract';
 export * from './types/events';
+// Parser functions (the types come via ./types/events above) so consumers can
+// call parseEvent/parseEvents and get discriminated-union narrowing (#112).
+export { parseEvent, parseEvents, isTrustFlowEvent } from './events';
 export * from './types/multisig';
 export * from './types/juror';
 export * from './types/profile';
