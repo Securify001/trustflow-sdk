@@ -2,12 +2,23 @@ import type { IPFSConfig } from './storage';
 
 export type Network = 'TESTNET' | 'MAINNET';
 
+/** Options for opt-in caching of Horizon balance lookups. */
+export interface BalanceCacheConfig {
+  /** Cache lifetime in milliseconds. Defaults to 5 seconds when caching is enabled. */
+  ttlMs?: number;
+}
+
 export interface ClientConfig {
   network?: Network;
   contractId: string;
   rpcUrl?: string;
   apiBaseUrl?: string;
   apiKey?: string;
+  /**
+   * Enables short-lived caching for `getBalance` calls. Omit this option to
+   * preserve the default behavior of fetching every balance from Horizon.
+   */
+  balanceCache?: BalanceCacheConfig;
   /** Optional configuration for the built-in `storage.upload()` IPFS helper. */
   ipfs?: IPFSConfig;
 }
