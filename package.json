@@ -38,6 +38,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "examples": "ts-node examples/",
