@@ -16,7 +16,7 @@ import { TrustFlowError } from '../errors';
  */
 export class SorobanContractClient extends AbstractContractClient {
   /** Map of dynamically generated contract methods bound to this client instance */
-  readonly methods: Record<string, Function> = {};
+  readonly methods: Record<string, (...args: never[]) => Promise<unknown>> = {};
 
   constructor(
     client: TrustFlowClient,

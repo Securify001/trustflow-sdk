@@ -64,6 +64,63 @@ describe('TrustFlowClient', () => {
     });
   });
 
+  describe('getBalance caching', () => {
+    const address = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function mockBalanceLookup(client: TrustFlowClient, balance = '42.0000000') {
+      return jest
+        .spyOn(client.getServer(), 'loadAccount')
+        .mockResolvedValue({
+          balances: [{ asset_type: 'native', balance }],
+        } as any);
+    }
+
+    it('uses a cached balance within the configured TTL', async () => {
+      const client = new TrustFlowClient({
+        contractId: mockContractId,
+        balanceCache: { ttlMs: 5_000 },
+      });
+      const loadAccount = mockBalanceLookup(client);
+
+      await expect(client.getBalance(address)).resolves.toBe('42.0000000');
+      await expect(client.getBalance(address)).resolves.toBe('42.0000000');
+
+      expect(loadAccount).toHaveBeenCalledTimes(1);
+    });
+
+    it('fetches a new balance after the cache TTL expires', async () => {
+      jest.useFakeTimers();
+      const client = new TrustFlowClient({
+        contractId: mockContractId,
+        balanceCache: { ttlMs: 5_000 },
+      });
+      const loadAccount = mockBalanceLookup(client);
+
+      await client.getBalance(address);
+      jest.advanceTimersByTime(5_001);
+      await client.getBalance(address);
+
+      expect(loadAccount).toHaveBeenCalledTimes(2);
+    });
+
+    it('bypasses a cached balance when skipCache is requested', async () => {
+      const client = new TrustFlowClient({
+        contractId: mockContractId,
+        balanceCache: {},
+      });
+      const loadAccount = mockBalanceLookup(client);
+
+      await client.getBalance(address);
+      await client.getBalance(address, { skipCache: true });
+
+      expect(loadAccount).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('getNetworkPassphrase', () => {
     it('should return testnet passphrase', () => {
       const client = new TrustFlowClient({

@@ -9,6 +9,16 @@ import {
 import { TrustFlowError } from './errors';
 import type { Network, ClientConfig } from './types';
 import { IPFSStorage } from './storage';
+import { SimpleCache } from './utils/cache';
+
+/** Default TTL for opt-in Horizon balance caching. */
+export const DEFAULT_BALANCE_CACHE_TTL_MS = 5_000;
+
+/** Controls cache behavior for a single balance lookup. */
+export interface GetBalanceOptions {
+  /** Fetch from Horizon even when a non-expired cached balance is available. */
+  skipCache?: boolean;
+}
 import { createContractBinding, SorobanContractClient } from './contract';
 
 
@@ -18,6 +28,7 @@ import { createContractBinding, SorobanContractClient } from './contract';
  */
 export class TrustFlowClient {
   private server: Horizon.Server;
+  private readonly balanceCache?: SimpleCache<string, string>;
   private _connected: boolean = false;
 
   readonly network: Network;
@@ -65,6 +76,9 @@ export class TrustFlowClient {
     this.apiBaseUrl = config.apiBaseUrl;
     this.apiKey = config.apiKey;
     this.storage = new IPFSStorage(config.ipfs);
+    this.balanceCache = config.balanceCache
+      ? new SimpleCache(config.balanceCache.ttlMs ?? DEFAULT_BALANCE_CACHE_TTL_MS)
+      : undefined;
 
     this.server = new Horizon.Server(HORIZON_URLS[this.network]);
   }
@@ -105,6 +119,7 @@ export class TrustFlowClient {
    * Retrieves the native XLM balance for a given Stellar address.
    *
    * @param address - Stellar public key (G... address)
+   * @param options - Set `skipCache` to bypass a configured balance cache.
    * @returns Balance in XLM as a string
    * @throws {TrustFlowError} If the account doesn't exist or network error occurs
    *
@@ -112,15 +127,25 @@ export class TrustFlowClient {
    * ```typescript
    * const balance = await client.getBalance('GDEPOSITOR...');
    * console.log(`Balance: ${balance} XLM`);
+   *
+   * // When `balanceCache` is configured, force a fresh Horizon lookup:
+   * const freshBalance = await client.getBalance('GDEPOSITOR...', { skipCache: true });
    * ```
    */
-  async getBalance(address: string): Promise<string> {
+  async getBalance(address: string, options: GetBalanceOptions = {}): Promise<string> {
+    if (!options.skipCache) {
+      const cachedBalance = this.balanceCache?.get(address);
+      if (cachedBalance !== undefined) return cachedBalance;
+    }
+
     try {
       const account = await this.server.loadAccount(address);
       const native = account.balances.find(
         (b: { asset_type: string }) => b.asset_type === 'native',
       );
-      return native?.balance ?? '0';
+      const balance = native?.balance ?? '0';
+      this.balanceCache?.set(address, balance);
+      return balance;
     } catch (error) {
       throw new TrustFlowError(
         `Failed to fetch balance for ${address}`,

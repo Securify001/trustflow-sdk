@@ -19,6 +19,23 @@ import { MULTISIG_SNAPSHOT_VERSION } from '../types/multisig';
 import { submitTransaction } from '../stellar/transaction';
 
 /**
+ * Default length of time (ms) a terminal-status operation (`submitted` or
+ * `expired`) is retained before it becomes eligible for automatic eviction.
+ */
+export const DEFAULT_MULTISIG_RETENTION_MS = 5 * 60 * 1000;
+
+/**
+ * Constructor options for {@link MultiSigEscrowClient}.
+ */
+export interface MultiSigEscrowClientOptions {
+  /**
+   * How long (ms) a terminal-status operation is retained before it is evicted
+   * from the in-memory store. Defaults to {@link DEFAULT_MULTISIG_RETENTION_MS}.
+   */
+  retentionMs?: number;
+}
+
+/**
  * Client for collecting M-of-N signatures on shared backend Escrow operations.
  *
  * Flow:
@@ -31,8 +48,15 @@ export class MultiSigEscrowClient {
   /** In-memory store of pending multi-sig operations, keyed by operationId. */
   private readonly operations = new Map<string, MultiSigOperation>();
   private _opCounter = 0;
+  /** Retention window for terminal-status operations before eviction. */
+  private readonly retentionMs: number;
 
-  constructor(private readonly config: ContractConfig) {}
+  constructor(
+    private readonly config: ContractConfig,
+    options?: MultiSigEscrowClientOptions,
+  ) {
+    this.retentionMs = options?.retentionMs ?? DEFAULT_MULTISIG_RETENTION_MS;
+  }
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -91,7 +115,7 @@ export class MultiSigEscrowClient {
     }
 
     if (this._isExpired(operation)) {
-      operation.status = 'expired';
+      this._markTerminal(operation, 'expired');
       return { ok: false, error: 'Operation has expired' };
     }
 
@@ -140,7 +164,7 @@ export class MultiSigEscrowClient {
     }
 
     if (this._isExpired(operation) && operation.status === 'pending') {
-      operation.status = 'expired';
+      this._markTerminal(operation, 'expired');
     }
 
     return { ok: true, data: this._buildStatus(operation) };
@@ -162,7 +186,7 @@ export class MultiSigEscrowClient {
     }
 
     if (this._isExpired(operation)) {
-      operation.status = 'expired';
+      this._markTerminal(operation, 'expired');
       return { ok: false, error: 'Operation has expired' };
     }
 
@@ -181,7 +205,7 @@ export class MultiSigEscrowClient {
 
     try {
       const submitted = await submitTransaction(assembledResult.data.xdr, horizonUrl);
-      operation.status = 'submitted';
+      this._markTerminal(operation, 'submitted');
       return {
         ok: true,
         data: {
@@ -225,11 +249,33 @@ export class MultiSigEscrowClient {
   }
 
   /**
-   * Returns all operations associated with a given escrow, regardless of status.
+   * Evicts terminal-status operations (`submitted` or `expired`) that have been
+   * retained past the configured retention window, preventing the internal
+   * operations `Map` from growing without bound in long-lived processes.
+   *
+   * Calling this also triggers an eviction sweep on every {@link listOperations}
+   * call, so listed results only ever reflect retained (non-evicted) operations.
+   */
+  prune(): void {
+    const cutoff = Date.now() - this.retentionMs;
+    for (const [operationId, op] of this.operations) {
+      const terminal = op.status === 'submitted' || op.status === 'expired';
+      if (terminal && op.terminalAt !== undefined && op.terminalAt <= cutoff) {
+        this.operations.delete(operationId);
+      }
+    }
+  }
+
+  /**
+   * Returns all retained operations associated with a given escrow, regardless
+   * of status. Terminal operations that have been evicted by {@link prune} (past
+   * the retention window) are excluded, so this reflects only retained
+   * (non-evicted) operations.
    *
    * @param escrowId - Escrow identifier
    */
   listOperations(escrowId: string): MultiSigOperation[] {
+    this.prune();
     return Array.from(this.operations.values()).filter((op) => op.escrowId === escrowId);
   }
 
@@ -465,6 +511,16 @@ export class MultiSigEscrowClient {
 
   private _isExpired(operation: MultiSigOperation): boolean {
     return operation.expiresAt !== undefined && Date.now() > operation.expiresAt;
+  }
+
+  /**
+   * Transitions an operation to a terminal status (`expired` or `submitted`)
+   * and records when it reached that state, so {@link prune} can evict it once
+   * the retention window elapses.
+   */
+  private _markTerminal(operation: MultiSigOperation, status: 'expired' | 'submitted'): void {
+    operation.status = status;
+    operation.terminalAt = Date.now();
   }
 
   private _buildStatus(operation: MultiSigOperation): MultiSigStatus {
